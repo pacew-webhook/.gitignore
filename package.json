@@ -1,0 +1,13 @@
+{
+  "name": "roblox-account-manager-web",
+  "version": "1.0.0",
+  "description": "Roblox Account Manager Web Dashboard Gratis",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nedb-promises": "^6.2.3"
+  }
+}

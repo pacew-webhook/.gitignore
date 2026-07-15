@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Web Account Manager</title>
+    <style>
+        :root {
+            --bg-main: #0a0c14;
+            --bg-card: #121624;
+            --border-color: #1f263d;
+            --accent-green: #00ffaa;
+            --accent-orange: #ffaa00;
+            --text-main: #ffffff;
+            --text-muted: #8b9bb4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        h1 span {
+            color: var(--accent-green);
+        }
+
+        .stats-bar {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px 20px;
+            display: inline-flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .stat-item strong {
+            font-size: 20px;
+            color: var(--text-main);
+            display: block;
+            margin-top: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .username {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-orange);
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.online {
+            background-color: rgba(0, 255, 170, 0.15);
+            color: var(--accent-green);
+        }
+
+        .status-badge.offline {
+            background-color: rgba(255, 0, 0, 0.15);
+            color: #ff4444;
+        }
+
+        .data-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding-bottom: 5px;
+        }
+
+        .data-label {
+            color: var(--text-muted);
+        }
+
+        .data-value {
+            font-weight: 500;
+        }
+
+        .time-stamp {
+            margin-top: 15px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .btn-danger {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-danger:hover {
+            background-color: #cc3333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ROBLOX <span>LIVE API</span> | Account Manager</h1>
+        <button class="btn-danger" onclick="resetData()">Reset Panel</button>
+    </header>
+
+    <div class="stats-bar" id="stats-container">
+        <div class="stat-item">ONLINE ACCOUNTS<strong id="stat-online">0 / 0</strong></div>
+        <div class="stat-item">TOTAL SHEKLESS<strong id="stat-shekless">0</strong></div>
+    </div>
+
+    <div class="grid" id="cards-container">
+        <!-- Data kartu akun otomatis diisi oleh JS -->
+    </div>
+</div>
+
+<script>
+    async function updateDashboard() {
+        try {
+            const res = await fetch('/api/accounts');
+            const accounts = await res.json();
+
+            const cardsContainer = document.getElementById('cards-container');
+            cardsContainer.innerHTML = '';
+
+            let onlineCount = 0;
+            let totalShekless = 0;
+
+            accounts.forEach(acc => {
+                // Hitung selisih waktu untuk mengecek status online asli (jika tidak update > 30 detik = dianggap offline)
+                const timeDiff = (new Date() - new Date(acc.lastUpdated)) / 1000;
+                let currentStatus = acc.status;
+                if (timeDiff > 30) {
+                    currentStatus = "Offline";
+                }
+
+                if (currentStatus === "Online") onlineCount++;
+                totalShekless += Number(acc.shekless || 0);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="username">${acc.username}</div>
+                        <div class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</div>
+                    </div>
+                    <div class="data-list">
+                        <div class="data-item">
+                            <span class="data-label">🪙 Shekless:</span>
+                            <span class="data-value">${Number(acc.shekless).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">💎 Gems:</span>
+                            <span class="data-value">${Number(acc.gems).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">🌱 Aktivitas:</span>
+                            <span class="data-value" style="color:#00ffaa;">${acc.currentFarm}</span>
+                        </div>
+                    </div>
+                    <div class="time-stamp">Last sync: ${new Date(acc.lastUpdated).toLocaleTimeString('id-ID')}</div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+
+            document.getElementById('stat-online').innerText = `${onlineCount} / ${accounts.length}`;
+            document.getElementById('stat-shekless').innerText = totalShekless.toLocaleString('id-ID');
+
+        } catch (err) {
+            console.error("Gagal sinkronisasi data dashboard:", err);
+        }
+    }
+
+    async function resetData() {
+        if(confirm("Apakah Anda yakin ingin menghapus semua daftar akun dari panel web ini?")) {
+            await fetch('/api/accounts', { method: 'DELETE' });
+            updateDashboard();
+        }
+    }
+
+    // Interval Auto Refresh Data setiap 3 detik
+    updateDashboard();
+    setInterval(updateDashboard, 3000);
+</script>
+</body>
+</html>
